@@ -34,10 +34,16 @@ def budget():
     budget =  budget[["AccRbuItem",'QTR1_B22','QTR2_B22','QTR3_B22','QTR4_B22']]
     return budget
 
+def openOrders():
+    openOrder = pd.read_excel("5. OPEN_ORDERS.xlsx")
+    openOrder = openOrder[["RBU","AccNo","ItemNumber","OrderQty","Salescode"]]
+    openOrder['AccRbuItem'] =  openOrder['AccNo'].astype(str) + "_" + openOrder['RBU'].astype(str) + "_" + openOrder['ItemNumber'].astype(str)
+    return openOrder
 
 
 
-def merge(fy21,fy22,budget):
+
+def merge(fy21,fy22,budget,openOrder):
     df = pd.merge(fy21,fy22, on="AccRbuItem", how="outer")
     df = df.fillna(0)
     df['QTR1_FY21'] = df['Jul_FY21']+df['Aug_FY21']+df['Sep_FY21']
@@ -48,6 +54,7 @@ def merge(fy21,fy22,budget):
     df['QTR2_FY22'] = df['Oct_FY22']+df['Nov_FY22']+df['Dec_FY22']
 
     df = pd.merge(df,budget, on='AccRbuItem', how='left')
+    df = pd.merge(df,openOrder[["AccRbuItem","OrderQty"]],on='AccRbuItem', how='left')
     df = df.fillna(0)
 
     return df
@@ -71,6 +78,8 @@ def addAttributes(df,pareto, rbu, customer, conversion, salescode):
 
     df['Customer'] = df['Customer'].fillna("Others")
     df = df.fillna(0)
+
+    
     
                   
     return df
@@ -80,8 +89,9 @@ pareto, rbu, customer, conversion, salescode = businessCategory()
 fy21 = sales_fy21()
 fy22 = sales_fy22()
 budget = budget()
+openOrder = openOrders()
 
-df = merge(fy21,fy22,budget)
+df = merge(fy21,fy22,budget,openOrder)
 df = addAttributes(df,pareto, rbu, customer, conversion, salescode)
 
 df.to_excel("df.xlsx")
